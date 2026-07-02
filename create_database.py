@@ -1,29 +1,39 @@
-#load pdf 
-#split into chunks 
-#create the embeddings 
-#store into chroma 
+# Load PDF
+# Split into Chunks
+# Create Embeddings
+# Store in ChromaDB
+
+from dotenv import load_dotenv
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings 
-from langchain_community.vectorstores import Chroma 
-from dotenv import load_dotenv
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 
 load_dotenv()
 
-data = PyPDFLoader("document loaders/deeplearning.pdf")
-docs = data.load()
+# Load PDF
+loader = PyPDFLoader("document loaders/deeplearning.pdf")
+docs = loader.load()
 
+# Split Document
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size = 1000,
-    chunk_overlap = 200
+    chunk_size=1000,
+    chunk_overlap=200
 )
 
 chunks = splitter.split_documents(docs)
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
-embedding_model = OpenAIEmbeddings()
-
+# Create Vector Database
 vectorstore = Chroma.from_documents(
-    documents= chunks,
+    documents=chunks,
     embedding=embedding_model,
     persist_directory="chroma_db"
 )
+
+vectorstore.persist()
+
+print("✅ Chroma Vector Database Created Successfully!")
