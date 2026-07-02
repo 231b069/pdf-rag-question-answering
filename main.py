@@ -1,30 +1,38 @@
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 
 load_dotenv()
 
-embedding_model = OpenAIEmbeddings()
+# Load Hugging Face Embedding Model (Free)
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
+# Load Chroma Vector Database
 vectorstore = Chroma(
-    persist_directory= "chroma_db",
+    persist_directory="chroma_db",
     embedding_function=embedding_model
 )
 
+# MMR Retriever
 retriever = vectorstore.as_retriever(
-    search_type = "mmr",
-    search_kwargs = {
-        "k" : 4,
-        "fetch_k":10,
-        "lambda_mult" :0.5
+    search_type="mmr",
+    search_kwargs={
+        "k": 4,
+        "fetch_k": 10,
+        "lambda_mult": 0.5
     }
 )
 
-llm = ChatMistralAI(model = "mistral-small-2506")
+# Load Mistral LLM
+llm = ChatMistralAI(
+    model="mistral-small-2506"
+)
 
-#prompt template 
+# Prompt Template
 prompt = ChatPromptTemplate.from_messages(
     [
         (
@@ -49,27 +57,28 @@ Question:
     ]
 )
 
-print("Rag system created ")
-
-print("press 0 to exit ")
+print("✅ RAG System Created Successfully!")
+print("Type 0 to exit.\n")
 
 while True:
-    query = input("You : ")
+    query = input("You: ")
+
     if query == "0":
-        break 
-    
+        break
+
     docs = retriever.invoke(query)
 
     context = "\n\n".join(
         [doc.page_content for doc in docs]
     )
-    
-    final_prompt = prompt.invoke({
-        "context" :context,
-        "question": query
-    })
-    
+
+    final_prompt = prompt.invoke(
+        {
+            "context": context,
+            "question": query
+        }
+    )
+
     response = llm.invoke(final_prompt)
 
-    print(f"\n AI: {response.content}")
-    
+    print(f"\nAI: {response.content}\n")
